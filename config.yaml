@@ -1,0 +1,10 @@
+additionalProperties:
+  packageName: actinia_openapi_python_client
+  packageVersion: 0.0.1
+  packageAuthor: Corey White
+  packageAuthorEmail: corey.white@openplains.com
+  packageLicense: GPL-3.0
+  packageDescription: Actinia Core Python Client
+  packageUrl: ""
+  packageKeywords: ["actinia", "actinia-core", "python", "client", "grassgis", "gis", "grass", "openplains"]
+  packageInstallRequires: ["requests", "urllib3", "six", "certifi", "python-dateutil"]
