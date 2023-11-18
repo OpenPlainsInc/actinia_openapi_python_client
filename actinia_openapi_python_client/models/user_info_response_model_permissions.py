@@ -19,7 +19,7 @@ import json
 
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from pydantic import BaseModel, StrictStr
+from pydantic import BaseModel, StrictStr, StrictInt
 from pydantic import Field
 try:
     from typing import Self
@@ -30,9 +30,9 @@ class UserInfoResponseModelPermissions(BaseModel):
     """
     The names of all users
     """ # noqa: E501
-    cell_limit: Optional[StrictStr] = Field(default=None, description="The limit of number of raster cells the user is allowed to process")
-    process_num_limit: Optional[StrictStr] = Field(default=None, description="The limit of number of processes the user is allowed to integrate into one process chain")
-    process_time_limit: Optional[StrictStr] = Field(default=None, description="The time a process must not exceed")
+    cell_limit: Optional[StrictInt] = Field(default=None, description="The limit of number of raster cells the user is allowed to process")
+    process_num_limit: Optional[StrictInt] = Field(default=None, description="The limit of number of processes the user is allowed to integrate into one process chain")
+    process_time_limit: Optional[StrictInt] = Field(default=None, description="The time a process must not exceed")
     accessible_datasets: Optional[Union[str, Any]] = Field(default=None, description="The persistent GRASS GIS databases the user is allowed to use. Contains one object for each location name with an array of strings containing all allowed mapset names. See example for more information.")
     accessible_modules: Optional[List[StrictStr]] = Field(default=None, description="The GRASS GIS modules the user is allowed to use")
     __properties: ClassVar[List[str]] = ["cell_limit", "process_num_limit", "process_time_limit", "accessible_datasets", "accessible_modules"]
@@ -93,5 +93,3 @@ class UserInfoResponseModelPermissions(BaseModel):
             "accessible_modules": obj.get("accessible_modules")
         })
         return _obj
-
-
