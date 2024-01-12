@@ -29,12 +29,13 @@ try:
 except ImportError:
     from typing_extensions import Self
 
+
 class GrassModule(BaseModel):
     """
     The definition of a single GRASS GIS module and its inputs, outputs and flags. This module will be run in a location/mapset environment and is part of a process chain. The stdout and stderr output of modules that were run before this module in the process chain can be used as stdin for this module. The stdout of a module can be automatically transformed in list, table or key/value JSON representations in the HTTP response.
     """ # noqa: E501
-    id: StrictStr = Field(description="A unique id to identify the module call in the process chain to reference its stdout and stderr output as stdin in other modules.")
-    module: StrictStr = Field(description="The name of the GRASS GIS module (r.univar, r.slope.aspect, v.select, ...) that should be executed. Use as module names \"importer\" or \"exporter\" to import or export raster layer, vector layer or other file based data without calling a GRASS GIS module.")
+    id: Optional[StrictStr] = Field(description="A unique id to identify the module call in the process chain to reference its stdout and stderr output as stdin in other modules.")
+    module: Optional[StrictStr] = Field(description="The name of the GRASS GIS module (r.univar, r.slope.aspect, v.select, ...) that should be executed. Use as module names \"importer\" or \"exporter\" to import or export raster layer, vector layer or other file based data without calling a GRASS GIS module.")
     inputs: Optional[List[InputParameter]] = Field(default=None, description="A list of input parameters of a GRASS GIS module.")
     outputs: Optional[List[OutputParameter]] = Field(default=None, description="A list of output parameters of a GRASS GIS module.")
     flags: Optional[StrictStr] = Field(default=None, description="The flags that should be set for the GRASS GIS module.")
@@ -51,7 +52,6 @@ class GrassModule(BaseModel):
         "validate_assignment": True,
         "protected_namespaces": (),
     }
-
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
