@@ -41,7 +41,7 @@ class ProcessingResponseModel(BaseModel):
     resource_id: StrictStr = Field(description="The unique resource id")
     queue: Optional[StrictStr] = Field(default=None, description="The name of the queue in which the job is queued")
     process_log: Optional[List[ProcessLogModel]] = Field(default=None, description="A list of ProcessLogModels")
-    process_chain_list: Optional[List[GrassModule]] = Field(default=None, description="The list of GRASS modules that were used in the processing")
+    process_chain_list: Optional[List[GrassModule]] = Field(default=None, description="The list of GRASS modules that were used in the processing", min_items=0)
     process_results: Optional[Union[StrictStr, Dict]] = Field(default=None, description="An arbitrary class that stores the processing results")
     progress: Optional[ProgressInfoModel] = None
     message: StrictStr = Field(description="Message for the user, maybe status, finished or error message")
