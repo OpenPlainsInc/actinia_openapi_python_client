@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from pydantic import BaseModel, StrictStr, field_validator
 from pydantic import Field
 try:
@@ -30,9 +30,9 @@ class StdoutParser(BaseModel):
     """
     Use this parameter to automatically parse the output of GRASS GIS modules and convert the output into tables, lists or key/value pairs in the result section of the response.If the property type is set to *table*, *list* or *kv* then the stdout of the current command will be parsed and the result of the parse operation will be added to the result dictionary using the provided id as key. GRASS GIS modules produce regular output. Many modules have the flag *-g* to create key value pairs as stdout output. Other create a list of values or a table with/without header.
     """ # noqa: E501
-    id: StrictStr = Field(description="The unique id that is used to identify the parsed output in the result dictionary.")
-    format: StrictStr = Field(description="The stdout format to be parsed.")
-    delimiter: StrictStr = Field(description="The delimiter that should be used to parse table, list and key/value module output. Many GRASS GIS  modules use by default \"|\" in tables and \"=\" in key/value pairs. A new line \"\\n\" is always the delimiter between rows in the output.")
+    id: Optional[StrictStr] = Field(default=None, description="The unique id that is used to identify the parsed output in the result dictionary.")
+    format: Optional[StrictStr] = Field(default=None, description="The stdout format to be parsed.")
+    delimiter: Optional[StrictStr] = Field(default=None, description="The delimiter that should be used to parse table, list and key/value module output. Many GRASS GIS  modules use by default \"|\" in tables and \"=\" in key/value pairs. A new line \"\\n\" is always the delimiter between rows in the output.")
     __properties: ClassVar[List[str]] = ["id", "format", "delimiter"]
 
     @field_validator('format')
