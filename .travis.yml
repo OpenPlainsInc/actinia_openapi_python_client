@@ -6,6 +6,7 @@ python:
   - "3.9"
   - "3.10"
   - "3.11"
+  - "3.12"
   # uncomment the following if needed
   #- "3.11-dev"  # 3.11 development branch
   #- "nightly"  # nightly build
