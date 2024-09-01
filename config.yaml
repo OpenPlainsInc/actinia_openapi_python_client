@@ -1,6 +1,6 @@
 additionalProperties:
   packageName: actinia_openapi_python_client
-  packageVersion: 0.0.3
+  packageVersion: 0.0.4
   packageAuthor: Corey White
   packageAuthorEmail: corey.white@openplains.com
   packageLicense: GPL-3.0
