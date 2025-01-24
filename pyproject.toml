@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "actinia_openapi_python_client"
-version = "0.0.4"
+version = "0.0.5"
 description = "Actinia OpenAPI Python Client"
 authors = ["Corey White <corey.white@openplains.com>"]
 license = "GPLv3"
