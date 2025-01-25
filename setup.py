@@ -22,7 +22,7 @@ from setuptools import setup, find_packages  # noqa: H301
 # http://pypi.python.org/pypi/setuptools
 NAME = "actinia-openapi-python-client"
 VERSION = "0.0.5"
-PYTHON_REQUIRES = ">=3.7"
+PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
     "urllib3 >= 1.25.3, <= 2.2.2",
     "python-dateutil",
@@ -43,7 +43,7 @@ setup(
     include_package_data=True,
     long_description_content_type='text/markdown',
     long_description="""\
-     # actinia-openapi-python-client
+    # actinia-openapi-python-client
 
     ## Actinia - The GRASS GIS REST API
 

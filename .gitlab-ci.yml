@@ -14,12 +14,6 @@ stages:
    - pip install -r test-requirements.txt
    - pytest --cov=actinia_openapi_python_client
 
-pytest-3.7:
-  extends: .pytest
-  image: python:3.7-alpine
-pytest-3.8:
-  extends: .pytest
-  image: python:3.8-alpine
 pytest-3.9:
   extends: .pytest
   image: python:3.9-alpine
@@ -27,5 +21,8 @@ pytest-3.10:
   extends: .pytest
   image: python:3.10-alpine
 pytest-3.11:
+  extends: .pytest
+  image: python:3.11-alpine
+pytest-3.12:
   extends: .pytest
   image: python:3.11-alpine
