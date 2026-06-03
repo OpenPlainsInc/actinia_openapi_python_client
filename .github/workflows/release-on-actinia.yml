@@ -1,0 +1,221 @@
+# Auto-regenerate the client when actinia-core publishes a new release.
+#
+# What it does (see CLAUDE.md and the plan in repo history):
+#   1. Find the latest actinia-org/actinia-core release tag.
+#   2. Skip if that version was already processed.
+#   3. Run actinia-core (with the official plugins) in Docker and dump its
+#      consolidated swagger.json — this is the only place the full spec exists.
+#   4. Regenerate the Python client with a pinned OpenAPI Generator.
+#   5. Bump this package's version on its own (independent) semver line.
+#   6. Open a PR for human review. Merging + cutting a GitHub Release then
+#      triggers python-publish.yml to publish to PyPI.
+#
+# The exact swagger route, container image tag, and credentials are exposed as
+# `env:` below so they are easy to adjust without rewriting the logic.
+
+name: Release on new actinia-core version
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily at 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      core_version:
+        description: 'actinia-core version to build (defaults to latest release)'
+        required: false
+        type: string
+
+permissions:
+  contents: write          # push the branch
+  pull-requests: write     # open the PR
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  # OpenAPI Generator image — pinned for reproducible output. The repo's
+  # .openapi-generator/VERSION is 7.2.0-SNAPSHOT; the closest stable release is v7.2.0.
+  OPENAPI_GENERATOR_IMAGE: openapitools/openapi-generator-cli:v7.2.0
+  # actinia-core HTTP endpoint and swagger route inside the running container.
+  ACTINIA_BASE_URL: http://localhost:8088
+  SWAGGER_PATH: /api/v3/swagger.json
+  # Default credentials shipped by the actinia-docker dev stack.
+  ACTINIA_USER: actinia-gdi
+  ACTINIA_PASSWORD: actinia-gdi
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout client repo
+        uses: actions/checkout@v4
+
+      - name: Resolve target actinia-core version
+        id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ github.event.inputs.core_version }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            CORE_VERSION="${INPUT_VERSION}"
+          else
+            CORE_VERSION="$(gh release view \
+              --repo actinia-org/actinia-core \
+              --json tagName --jq .tagName)"
+          fi
+          # Normalise: strip a leading "v" if upstream ever adds one.
+          CORE_VERSION="${CORE_VERSION#v}"
+          echo "Latest actinia-core version: ${CORE_VERSION}"
+          echo "core_version=${CORE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "branch=auto/actinia-core-${CORE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "spec=actinia_swagger_${CORE_VERSION}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if version already processed
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SPEC="${{ steps.ver.outputs.spec }}"
+          BRANCH="${{ steps.ver.outputs.branch }}"
+          PROCEED=true
+          if [ -f "${SPEC}" ]; then
+            echo "Spec ${SPEC} already committed on this branch — nothing to do."
+            PROCEED=false
+          elif git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
+            echo "Branch ${BRANCH} already exists on origin — nothing to do."
+            PROCEED=false
+          fi
+          echo "proceed=${PROCEED}" >> "$GITHUB_OUTPUT"
+
+      - name: Start actinia-core (with plugins) and dump swagger.json
+        if: steps.guard.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          SPEC="${{ steps.ver.outputs.spec }}"
+
+          # The actinia-docker dev stack runs actinia-core together with the
+          # official plugins and its KVDB/redis dependency.
+          git clone --depth 1 https://github.com/actinia-org/actinia-docker.git
+          cd actinia-docker
+          docker compose -f docker-compose.yml up -d
+
+          # Wait for actinia-core to answer.
+          echo "Waiting for actinia-core to become healthy..."
+          for i in $(seq 1 60); do
+            if curl -sf -u "${ACTINIA_USER}:${ACTINIA_PASSWORD}" \
+                 "${ACTINIA_BASE_URL}/api/v3/version" >/dev/null 2>&1; then
+              echo "actinia-core is up."
+              break
+            fi
+            sleep 5
+            if [ "$i" -eq 60 ]; then
+              echo "::error::actinia-core did not become healthy in time"
+              docker compose -f docker-compose.yml logs --tail=200
+              exit 1
+            fi
+          done
+
+          # Dump the consolidated spec (includes plugin endpoints).
+          curl -sf -u "${ACTINIA_USER}:${ACTINIA_PASSWORD}" \
+            "${ACTINIA_BASE_URL}${SWAGGER_PATH}" -o "../${SPEC}"
+
+          cd ..
+          # Validate: real JSON with paths, and confirm plugin endpoints landed.
+          python -c "import json,sys; d=json.load(open('${SPEC}')); \
+            assert d.get('paths'), 'no paths in spec'; \
+            print('paths:', len(d['paths']))"
+          echo "Sample of discovered paths (look for plugin routes):"
+          python -c "import json; d=json.load(open('${SPEC}')); \
+            [print(' ', p) for p in sorted(d['paths'])[:40]]"
+
+      - name: Regenerate the Python client
+        if: steps.guard.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          SPEC="${{ steps.ver.outputs.spec }}"
+          docker run --rm -v "${PWD}:/local" "${OPENAPI_GENERATOR_IMAGE}" generate \
+            -g python \
+            -c /local/config.yaml \
+            -i "/local/${SPEC}" \
+            -o /local
+          # The generator may write as root; normalise ownership for later steps.
+          sudo chown -R "$(id -u):$(id -g)" .
+
+      - name: Bump client version (independent semver patch)
+        if: steps.guard.outputs.proceed == 'true'
+        id: bump
+        env:
+          CORE_VERSION: ${{ steps.ver.outputs.core_version }}
+        run: |
+          set -euo pipefail
+          NEW_VERSION="$(python - <<'PY'
+          import re, pathlib
+          cfg = pathlib.Path("config.yaml").read_text()
+          cur = re.search(r'packageVersion:\s*([0-9]+\.[0-9]+\.[0-9]+)', cfg).group(1)
+          major, minor, patch = (int(x) for x in cur.split("."))
+          new = f"{major}.{minor}.{patch + 1}"
+
+          # config.yaml
+          pathlib.Path("config.yaml").write_text(
+              re.sub(r'(packageVersion:\s*)[0-9]+\.[0-9]+\.[0-9]+', rf'\g<1>{new}', cfg))
+
+          # pyproject.toml
+          pp = pathlib.Path("pyproject.toml")
+          pp.write_text(re.sub(r'(?m)^(version\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(")',
+                               rf'\g<1>{new}\g<2>', pp.read_text(), count=1))
+
+          # setup.py
+          sp = pathlib.Path("setup.py")
+          sp.write_text(re.sub(r'(VERSION\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(")',
+                               rf'\g<1>{new}\g<2>', sp.read_text(), count=1))
+
+          # UPSTREAM.md — record the actinia-core version this build targets.
+          import os
+          core = os.environ["CORE_VERSION"]
+          up = pathlib.Path("UPSTREAM.md")
+          up.write_text(re.sub(r'(\| actinia-core \| ).*?( \|)',
+                               rf'\g<1>{core}\g<2>', up.read_text(), count=1))
+
+          print(new)
+          PY
+          )"
+          echo "New client version: ${NEW_VERSION}"
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create branch, commit, and open PR
+        if: steps.guard.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          BRANCH="${{ steps.ver.outputs.branch }}"
+          CORE_VERSION="${{ steps.ver.outputs.core_version }}"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+
+          # Drop the throwaway actinia-docker clone before committing.
+          rm -rf actinia-docker
+          git add -A
+          git commit -m "Regenerate client for actinia-core ${CORE_VERSION} (v${NEW_VERSION})"
+          git push --set-upstream origin "${BRANCH}"
+
+          gh pr create \
+            --title "Regenerate client for actinia-core ${CORE_VERSION} (v${NEW_VERSION})" \
+            --body "Automated regeneration triggered by actinia-core **${CORE_VERSION}**.
+
+          - Client version bumped to **${NEW_VERSION}** (independent semver).
+          - Spec dumped from a running actinia-core (with plugins): \`actinia_swagger_${CORE_VERSION}.json\`.
+          - Generated with \`${OPENAPI_GENERATOR_IMAGE}\`.
+
+          Review the diff, merge, then cut a GitHub Release to publish to PyPI (via \`python-publish.yml\`)." \
+            --label "automated" \
+            --label "dependencies" || \
+          gh pr create \
+            --title "Regenerate client for actinia-core ${CORE_VERSION} (v${NEW_VERSION})" \
+            --body "Automated regeneration for actinia-core ${CORE_VERSION}; client bumped to ${NEW_VERSION}."

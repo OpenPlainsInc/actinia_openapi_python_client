@@ -7,4 +7,4 @@ additionalProperties:
   packageDescription: Actinia Core Python Client
   packageUrl: ""
   packageKeywords: ["actinia", "actinia-core", "python", "client", "grassgis", "gis", "grass", "openplains"]
-  packageInstallRequires: ["requests", "urllib3", "six", "certifi", "python-dateutil"]
+  packageInstallRequires: ["urllib3", "python-dateutil", "pydantic >= 2", "typing-extensions >= 4.7.1"]
