@@ -21,3 +21,21 @@
 #docs/*.md
 # Then explicitly reverse the ignore rule for a single file:
 #!docs/README.md
+
+# ---------------------------------------------------------------------------
+# Hand-maintained files (do NOT let the generator overwrite these).
+# The automated regeneration workflow relies on these being protected.
+# ---------------------------------------------------------------------------
+
+# Project guidance and packaging metadata customized by hand.
+CLAUDE.md
+setup.py
+pyproject.toml
+
+# CI workflows are hand-maintained, not generator-managed.
+.github/workflows/python.yml
+.github/workflows/python-publish.yml
+.github/workflows/release-on-actinia.yml
+
+# Stale helper script (kotlin-spring); not used to build this client.
+generate.sh
