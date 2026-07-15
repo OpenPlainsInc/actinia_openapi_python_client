@@ -22,9 +22,9 @@ from setuptools import setup, find_packages  # noqa: H301
 # http://pypi.python.org/pypi/setuptools
 NAME = "actinia-openapi-python-client"
 VERSION = "0.0.5"
-PYTHON_REQUIRES = ">=3.9"
+PYTHON_REQUIRES = ">=3.11"
 REQUIRES = [
-    "urllib3 >= 1.25.3, <= 2.2.2",
+    "urllib3 >=2.7.0, <=2.7.0",
     "python-dateutil",
     "pydantic >= 2",
     "typing-extensions >= 4.7.1",
