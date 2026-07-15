@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout client repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Resolve target actinia-core version
         id: ver
