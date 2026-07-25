@@ -7,6 +7,9 @@ name: actinia_openapi_python_client Python package
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
