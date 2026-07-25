@@ -64,3 +64,6 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# private Claude context
+CLAUDE.local.md
