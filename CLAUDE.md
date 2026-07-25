@@ -77,4 +77,4 @@ The `test/` tree mirrors the generated code: one `test_*.py` per API class and p
 
 ## CI
 
-GitHub Actions (`.github/workflows/python.yml`) runs flake8 + pytest on Python 3.9–3.12 for every push and PR. `.github/workflows/python-publish.yml` builds and publishes to PyPI on a published GitHub release (uses `PYPI_API_TOKEN`). A parallel GitLab CI config (`.gitlab-ci.yml`) runs the same pytest matrix. Supported Python is **3.9+**.
+GitHub Actions (`.github/workflows/python.yml`) runs flake8 + pytest on Python 3.11–3.12 for every push and PR. `.github/workflows/python-publish.yml` builds and publishes to PyPI on a published GitHub release (uses `PYPI_API_TOKEN`). A parallel GitLab CI config (`.gitlab-ci.yml`) runs the same pytest matrix. Supported Python is **3.11+**.

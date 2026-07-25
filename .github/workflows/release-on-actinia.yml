@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout client repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Resolve target actinia-core version
         id: ver
@@ -136,10 +136,14 @@ jobs:
         run: |
           set -euo pipefail
           SPEC="${{ steps.ver.outputs.spec }}"
+          # --skip-validate-spec: the spec dumped from a live actinia-core has
+          # known validation issues (undeclared path params, stray attributes)
+          # that originate upstream; strict validation would abort generation.
           docker run --rm -v "${PWD}:/local" "${OPENAPI_GENERATOR_IMAGE}" generate \
             -g python \
             -c /local/config.yaml \
             -i "/local/${SPEC}" \
+            --skip-validate-spec \
             -o /local
           # The generator may write as root; normalise ownership for later steps.
           sudo chown -R "$(id -u):$(id -g)" .
