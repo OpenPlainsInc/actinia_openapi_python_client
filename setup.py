@@ -24,7 +24,7 @@ NAME = "actinia-openapi-python-client"
 VERSION = "0.0.5"
 PYTHON_REQUIRES = ">=3.11"
 REQUIRES = [
-    "urllib3 >=2.7.0, <=2.7.0",
+    "urllib3 >=2.8.0, <=2.8.0",
     "python-dateutil",
     "pydantic >= 2",
     "typing-extensions >= 4.7.1",
